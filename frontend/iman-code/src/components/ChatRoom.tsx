@@ -21,6 +21,8 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
   const [newMessage, setNewMessage] = useState('');
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [hasShownReviewPrompt, setHasShownReviewPrompt] = useState(false);
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>(messages);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -29,14 +31,16 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [localMessages]);
 
-  // Calculate word count for this conversation
-  const wordCount = messages.reduce((count, message) => {
+  useEffect(() => {
+    console.log('Updated messages:', localMessages);
+  }, [localMessages]);
+
+  const wordCount = localMessages.reduce((count, message) => {
     return count + message.text.split(' ').length;
   }, 0);
 
-  // Check if we should show review modal (after 100 words exchanged)
   useEffect(() => {
     if (wordCount >= 100 && !hasShownReviewPrompt) {
       setShowReviewModal(true);
@@ -51,13 +55,18 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
       id: Date.now().toString(),
       text: newMessage.trim(),
       senderId: currentUser.id,
-      timestamp: new Date()
+      // timestamp: new Date()
     };
 
     onSendMessage(message);
+    setLocalMessages(prev => {
+      const updated = [...prev, message];
+      console.log('Sent message:', message);
+      console.log('Updated messages:', updated);
+      return updated;
+    });
     setNewMessage('');
 
-    // Simulate response from the other user (for demo purposes)
     setTimeout(() => {
       const responses = [
         "That's really interesting!",
@@ -71,19 +80,50 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
         "You seem really thoughtful!",
         "Thanks for sharing that with me!"
       ];
-      
+
       const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      
+
       const responseMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         text: randomResponse,
         senderId: match.user.id,
-        timestamp: new Date()
+        // timestamp: new Date()
       };
 
       onSendMessage(responseMessage);
-    }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
+      setLocalMessages(prev => {
+        const updated = [...prev, responseMessage];
+        console.log('Received message:', responseMessage);
+        console.log('Updated messages:', updated);
+        return updated;
+      });
+    }, 1000 + Math.random() * 2000);
   };
+
+
+  const handleAI = () => {
+
+    const userId = localMessages[0].senderId;
+    const receiverId = localMessages[1].senderId;
+
+    const finalData = {
+      person_one : [],
+      person_two : [],
+    }
+
+
+    localMessages.forEach((message) => {
+      if(message.senderId == userId){
+        finalData.person_one.push(message.text);
+      }
+      else if(message.senderId == receiverId){
+        finalData.person_two.push(message.text);
+      }
+    })
+
+    console.log(finalData);
+
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -113,13 +153,13 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          
+
           <img
             src={match.user.photo}
             alt={match.user.name}
             className="w-10 h-10 rounded-full object-cover"
           />
-          
+
           <div className="flex-1">
             <h3 className="font-semibold">{match.user.name}</h3>
             <p className="text-sm opacity-90">
@@ -141,13 +181,13 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {messages.length === 0 ? (
+        {localMessages.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-2">👋</div>
             <p className="text-gray-600">Say hello to start the conversation!</p>
           </div>
         ) : (
-          messages.map((message) => (
+          localMessages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.senderId === currentUser.id ? 'justify-end' : 'justify-start'}`}
@@ -163,7 +203,7 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
                 <p className={`text-xs mt-1 ${
                   message.senderId === currentUser.id ? 'text-white/70' : 'text-gray-500'
                 }`}>
-                  {formatTime(message.timestamp)}
+                  {/* {formatTime(message.timestamp)} */}
                 </p>
               </div>
             </div>
@@ -189,6 +229,10 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
           >
             <Send className="w-4 h-4" />
           </Button>
+
+          <Button
+          onClick={handleAI}
+          className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-pink-600 hover:to-red-700">Unmatch</Button>
         </div>
       </div>
 
@@ -204,3 +248,4 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
 };
 
 export default ChatRoom;
+

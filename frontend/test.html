@@ -15,10 +15,12 @@
   <ul id="chatbox"></ul>
 
   <script>
+
+    const messages = [];
     const userId = prompt("Enter your user ID:");
     document.getElementById("user-id").textContent = userId;
 
-    const socket = io("http://localhost:3000");
+    const socket = io("https://dating-app-ai.onrender.com");
 
     socket.on("connect", () => {
       console.log("Connected:", socket.id);
@@ -27,13 +29,21 @@
 
     socket.on("receive_message", (data) => {
       const li = document.createElement("li");
+
       li.textContent = `[FROM ${data.from}] ${data.message}`;
+
+      const receive_message = data.message;
+      console.log(receive_message);
+
       document.getElementById("chatbox").appendChild(li);
     });
 
     function sendMessage() {
       const to = document.getElementById("to").value;
       const message = document.getElementById("message").value;
+      messages.push(message);
+
+      console.log(messages);
       socket.emit("send_message", {
         from: userId,
         to: to,

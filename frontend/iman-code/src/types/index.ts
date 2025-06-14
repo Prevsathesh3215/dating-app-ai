@@ -36,7 +36,7 @@ export interface ChatMessage {
   id: string;
   text: string;
   senderId: string;
-  timestamp: Date;
+  // timestamp: Date;
 }
 
 export interface PotentialMatch extends User {
