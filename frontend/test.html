@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+</head>
+<body>
+  <h2>Chat App</h2>
+  <p>Your User ID: <span id="user-id"></span></p>
+
+  <input type="text" id="to" placeholder="Send to (user ID)" />
+  <input type="text" id="message" placeholder="Your Message" />
+  <button onclick="sendMessage()">Send</button>
+
+  <ul id="chatbox"></ul>
+
+  <script>
+
+    const messages = [];
+    const userId = prompt("Enter your user ID:");
+    document.getElementById("user-id").textContent = userId;
+
+    const socket = io("https://dating-app-ai.onrender.com");
+
+    socket.on("connect", () => {
+      console.log("Connected:", socket.id);
+      socket.emit("register", userId);
+    });
+
+    socket.on("receive_message", (data) => {
+      const li = document.createElement("li");
+
+      li.textContent = `[FROM ${data.from}] ${data.message}`;
+
+      const receive_message = data.message;
+      console.log(receive_message);
+
+      document.getElementById("chatbox").appendChild(li);
+    });
+
+    function sendMessage() {
+      const to = document.getElementById("to").value;
+      const message = document.getElementById("message").value;
+      messages.push(message);
+
+      console.log(messages);
+      socket.emit("send_message", {
+        from: userId,
+        to: to,
+        message: message
+      });
+    }
+  </script>
+</body>
+</html>
