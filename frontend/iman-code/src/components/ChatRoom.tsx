@@ -123,6 +123,8 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
 
     console.log(finalData);
 
+    console.log(JSON.stringify(finalData));
+
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

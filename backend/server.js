@@ -4,6 +4,8 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 require("dotenv").config();
 
+const generateChatReview = require('./ai');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -47,6 +49,18 @@ io.on("connection", (socket) => {
 app.get("/", (req, res) => {
   res.send("Dating app chat backend is running");
 });
+
+
+
+app.post("/getreview", (req, res) => {
+  
+    generateChatReview(req.body)
+    .then((data) => {
+      console.log(data);
+      res.send(data);
+    })
+
+})
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

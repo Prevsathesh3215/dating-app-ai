@@ -1,5 +1,4 @@
-// ai.js
-const axios = require('axios');
+const axios = require("axios");
 
 const TOGETHER_API_KEY = 'e9c3424271a187be0ca000ab5de971e76d722450f8a0215e5ea78c5654c9e35e';
 
@@ -8,7 +7,7 @@ async function generateChatReview(convo = '') {
     const response = await axios.post(
       'https://api.together.xyz/v1/chat/completions',
       {
-        model: 'mistralai/Mistral-7B-Instruct-v0.1', // Or mistralai/Mistral-7B-Instruct-v0.1
+        model: 'mistralai/Mistral-7B-Instruct-v0.1',
         messages: [
           {
             role: 'system',
@@ -32,6 +31,7 @@ async function generateChatReview(convo = '') {
     );
 
     const review = response.data.choices[0].message.content.trim();
+    console.log(review)
     return review;
   } catch (error) {
     console.error('Error generating review:', error.response?.data || error.message);
@@ -39,5 +39,5 @@ async function generateChatReview(convo = '') {
   }
 }
 
-// Example usage
-generateChatReview("User: hey lol\nMatch: lol hey\nUser: wyd\nMatch: u?").then(console.log);
+module.exports = generateChatReview;
+
