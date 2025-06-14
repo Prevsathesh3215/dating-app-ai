@@ -7,6 +7,16 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Send, User as UserIcon } from 'lucide-react';
 import ReviewModal from './ReviewModal';
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+
+
 interface ChatRoomProps {
   match: Match;
   currentUser: User;
@@ -21,7 +31,10 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
   const [newMessage, setNewMessage] = useState('');
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [hasShownReviewPrompt, setHasShownReviewPrompt] = useState(false);
+  const [showUnmatchDialog, setShowUnmatchDialog] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>(messages);
+  const [aiReview, setAiReview] = useState<string | null>(null);
+
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -101,8 +114,9 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
   };
 
 
-  const handleAI = () => {
+  const handleAI = async () => {
 
+    setShowUnmatchDialog(true);
     const userId = localMessages[0].senderId;
     const receiverId = localMessages[1].senderId;
 
@@ -124,6 +138,28 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
     console.log(finalData);
 
     console.log(JSON.stringify(finalData));
+
+
+    try {
+      const response = await fetch("http://localhost:3000/getreview", {
+        method: "POST",
+        body: JSON.stringify(finalData),
+      });
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+
+      const res = await response.text()
+      console.log(res);
+      setAiReview(res); // ✅ Save response to state
+
+    } 
+    catch (error) {
+      console.error(error.message);
+      setAiReview("Something went wrong. Couldn't get a review.");
+
+    }
+
 
   }
 
@@ -236,6 +272,33 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
           onClick={handleAI}
           className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-pink-600 hover:to-red-700">Unmatch</Button>
         </div>
+
+          <Dialog open={showUnmatchDialog} onOpenChange={setShowUnmatchDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>AI Wingman Says....</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-gray-500">
+                {aiReview ?? "Loading..."}
+              </p>
+              <DialogFooter className="mt-4">
+                <DialogClose asChild>
+                  <Button variant="ghost">Cancel</Button>
+                </DialogClose>
+                <Button
+                  className="bg-red-600 text-white hover:bg-red-700"
+                  onClick={() => {
+                    // TODO: Add unmatch logic here
+                    console.log('Unmatched!');
+                    setShowUnmatchDialog(false);
+                  }}
+                >
+                  Confirm Unmatch
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
       </div>
 
       {/* Review Modal */}
