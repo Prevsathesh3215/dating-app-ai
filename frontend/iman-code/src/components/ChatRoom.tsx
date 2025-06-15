@@ -17,6 +17,15 @@ import {
 } from '@/components/ui/dialog';
 
 
+const suggestions = [
+  "Hey! How's your day going?",
+  "What's something fun you did recently?",
+  "Got any weekend plans?",
+  "You seem interesting! Tell me more about you.",
+  "What’s your favorite food?",
+];
+
+
 interface ChatRoomProps {
   match: Match;
   currentUser: User;
@@ -34,6 +43,10 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
   const [showUnmatchDialog, setShowUnmatchDialog] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>(messages);
   const [aiReview, setAiReview] = useState<string | null>(null);
+  const [convoMsg, setConvoMsg] = useState<ChatMessage[]>([]);
+  const [dynamicSuggestions, setDynamicSuggestions] = useState<string[] | null>(null);
+
+
 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -47,7 +60,14 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
   }, [localMessages]);
 
   useEffect(() => {
-    console.log('Updated messages:', localMessages);
+    if (localMessages.length >= 2) {
+      const lastTwo = [
+        localMessages[localMessages.length - 2],
+        localMessages[localMessages.length - 1],
+      ];
+      setConvoMsg(lastTwo);
+      console.log("Last two messages:", lastTwo);
+    }
   }, [localMessages]);
 
   const wordCount = localMessages.reduce((count, message) => {
@@ -108,15 +128,17 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
         const updated = [...prev, responseMessage];
         console.log('Received message:', responseMessage);
         console.log('Updated messages:', updated);
+
+        notifyNewIncomingMessage(responseMessage);
+
         return updated;
       });
     }, 1000 + Math.random() * 2000);
   };
 
 
-  const handleAI = async () => {
+  const processData = () => {
 
-    setShowUnmatchDialog(true);
     const userId = localMessages[0].senderId;
     const receiverId = localMessages[1].senderId;
 
@@ -135,7 +157,17 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
       }
     })
 
-    console.log(finalData);
+    return finalData;
+
+  }
+
+
+  const handleAI = async () => {
+
+    setShowUnmatchDialog(true);
+    const finalData = processData();
+
+    // console.log(finalData);
 
     console.log(JSON.stringify(finalData));
 
@@ -150,7 +182,7 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
       }
 
       const res = await response.text()
-      console.log(res);
+      // console.log(res);
       setAiReview(res); // ✅ Save response to state
 
     } 
@@ -159,9 +191,39 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
       setAiReview("Something went wrong. Couldn't get a review.");
 
     }
-
-
   }
+
+
+  const notifyNewIncomingMessage = async (message: ChatMessage) => {
+
+
+    console.log("hi");
+
+    console.log(convoMsg)
+
+    const dataToSend = [ { person_one : convoMsg[0].text }, { person_two : convoMsg[1].text } ]
+
+    try {
+      const res = await fetch("http://localhost:3000/msgprompt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json" // ✅ This is required
+        },
+        body: JSON.stringify(dataToSend),
+      });
+
+      const response = await res.json();
+      console.log(response);
+
+      setDynamicSuggestions(response);
+
+
+      // console.log("Notified server of incoming message:", message.text);
+    } catch (error) {
+      console.error("Failed to notify server:", error);
+    }
+  };
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -270,13 +332,13 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
 
           <Button
           onClick={handleAI}
-          className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-pink-600 hover:to-red-700">Unmatch</Button>
+          className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-pink-600 hover:to-red-700">RizzPT Review</Button>
         </div>
 
           <Dialog open={showUnmatchDialog} onOpenChange={setShowUnmatchDialog}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>AI Wingman Says....</DialogTitle>
+                <DialogTitle>RizzPT Says....</DialogTitle>
               </DialogHeader>
               <p className="text-sm text-gray-500">
                 {aiReview ?? "Loading..."}
@@ -293,13 +355,32 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
                     setShowUnmatchDialog(false);
                   }}
                 >
-                  Confirm Unmatch
+                  Thanks RizzPT!
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
       </div>
+
+
+      {/* Message Suggestions */}
+      {(dynamicSuggestions ?? suggestions).length > 0 && (
+      <div className="flex flex-wrap gap-2 mt-2 px-2">
+        {(dynamicSuggestions ?? suggestions).map((text, index) => (
+          <Button
+            key={index}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            onClick={() => setNewMessage(text)}
+          >
+            {text}
+          </Button>
+        ))}
+      </div>
+    )}
+
 
       {/* Review Modal */}
       <ReviewModal

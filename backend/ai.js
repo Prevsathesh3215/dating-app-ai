@@ -2,8 +2,9 @@ const axios = require("axios");
 
 const TOGETHER_API_KEY = 'e9c3424271a187be0ca000ab5de971e76d722450f8a0215e5ea78c5654c9e35e';
 
-async function generateChatReview(convo = '') {
+async function generateChatReview(convo = '', content) {
   try {
+    console.log(convo);
     const response = await axios.post(
       'https://api.together.xyz/v1/chat/completions',
       {
@@ -11,8 +12,7 @@ async function generateChatReview(convo = '') {
         messages: [
           {
             role: 'system',
-            content:
-              'Act like a dating app chat reviewer. give some feedback on the conversation made by the user. the review needs to sound so sarcastic and brutally honest. keep the feedback short.',
+            content: content,
           },
           {
             role: 'user',
@@ -30,8 +30,8 @@ async function generateChatReview(convo = '') {
       }
     );
 
-    const review = response.data.choices[0].message.content.trim();
-    console.log(review)
+    const review = response.data.choices[0].message.content
+    // console.log(review)
     return review;
   } catch (error) {
     console.error('Error generating review:', error.response?.data || error.message);

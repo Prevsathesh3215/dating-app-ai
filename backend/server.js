@@ -51,10 +51,31 @@ app.get("/", (req, res) => {
 });
 
 
+app.post("/msgprompt", (req, res) => {
+  console.log(req.body);
+
+  const msgString = req.body[0].person_one + '\n' + req.body[1].person_two
+
+  console.log(msgString)
+  generateChatReview(msgString, 'Act like a dating app chat reviewer. I"m going to send you the recent messages sent, and you"re going to give me 3 suggestions on the next reponse to give. Important: Return the responses in an array of strings. Make the responses also short')
+  .then((data) => {
+    console.log(data);
+
+    const messages = data
+      .split(/\d+\.\s+/)           // Split on "1. ", "2. ", etc.
+      .filter(Boolean)             // Remove empty strings (from the start)
+      .map(s => s.trim().replace(/^"|"$/g, '')); // Trim and remove quotes
+
+
+    res.send(messages);
+  })
+})
+
+
 
 app.post("/getreview", (req, res) => {
   
-    generateChatReview(req.body)
+    generateChatReview(req.body, 'Act like a dating app chat reviewer. give some feedback on the conversation made by the user. the review needs to sound so sarcastic and brutally honest. keep the feedback short.')
     .then((data) => {
       console.log(data);
       res.send(data);
