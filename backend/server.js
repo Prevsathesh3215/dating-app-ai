@@ -5,6 +5,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const generateChatReview = require('./ai');
+const generateAIResp = require('./ai_two')
 
 const app = express();
 app.use(cors());
@@ -51,13 +52,25 @@ app.get("/", (req, res) => {
 });
 
 
+app.post("/aireply", async (req, res) => {
+
+  console.log(req.body);
+
+  const aiData = await generateAIResp(req.body);
+
+
+  res.send(aiData);
+
+})
+
+
 app.post("/msgprompt", (req, res) => {
   console.log(req.body);
 
   const msgString = req.body[0].person_one + '\n' + req.body[1].person_two
 
   console.log(msgString)
-  generateChatReview(msgString, 'Act like a dating app chat reviewer. I"m going to send you the recent messages sent, and you"re going to give me 3 suggestions on the next reponse to give. Important: Return the responses in an array of strings. Make the responses also short')
+  generateChatReview(msgString, 'Act like a Gen Z dating app chat reviewer. I"m going to send you the recent messages sent, and you"re going to give me 3 Gen Z-esque suggestions on the next reponse to give. Important: Return the responses in an array of strings. Make the responses also short')
   .then((data) => {
     console.log(data);
 
@@ -66,7 +79,7 @@ app.post("/msgprompt", (req, res) => {
       .filter(Boolean)             // Remove empty strings (from the start)
       .map(s => s.trim().replace(/^"|"$/g, '')); // Trim and remove quotes
 
-
+    messages.shift();
     res.send(messages);
   })
 })
@@ -75,7 +88,7 @@ app.post("/msgprompt", (req, res) => {
 
 app.post("/getreview", (req, res) => {
   
-    generateChatReview(req.body, 'Act like a dating app chat reviewer. give some feedback on the conversation made by the user. the review needs to sound so sarcastic and brutally honest. keep the feedback short.')
+    generateChatReview(req.body, 'Act like a Gen Z dating app chat reviewer. give some feedback on the conversation made by the user. the review needs to sound so sarcastic and brutally honest. keep the feedback short.')
     .then((data) => {
       console.log(data);
       res.send(data);

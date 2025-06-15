@@ -63,6 +63,11 @@ const Index = () => {
     }
   };
 
+  useEffect(() => {
+    // Reset messages on app load
+    setMessages({});
+  }, []);
+
   // Load user data from localStorage on mount
   useEffect(() => {
     const savedUser = safeGetLocalStorage('currentUser');
@@ -87,10 +92,10 @@ const Index = () => {
       setMatches(fixedMatches);
     }
 
-    const savedMessages = safeGetLocalStorage('messages');
-    if (savedMessages) {
-      setMessages(savedMessages);
-    }
+    // const savedMessages = safeGetLocalStorage('messages');
+    // if (savedMessages) {
+    //   setMessages(savedMessages);
+    // }
   }, []);
 
   // Save data to localStorage whenever it changes

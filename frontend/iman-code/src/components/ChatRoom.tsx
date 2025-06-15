@@ -81,7 +81,7 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
     }
   }, [wordCount, hasShownReviewPrompt]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
     const message: ChatMessage = {
@@ -91,6 +91,8 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
       // timestamp: new Date()
     };
 
+    const userText = message.text;
+    console.log(userText);
     onSendMessage(message);
     setLocalMessages(prev => {
       const updated = [...prev, message];
@@ -100,40 +102,62 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
     });
     setNewMessage('');
 
-    setTimeout(() => {
-      const responses = [
-        "That's really interesting!",
-        "I totally agree with you!",
-        "Tell me more about that!",
-        "Haha, that's funny!",
-        "What do you think about...?",
-        "I love that idea!",
-        "That sounds amazing!",
-        "I've never thought about it that way.",
-        "You seem really thoughtful!",
-        "Thanks for sharing that with me!"
-      ];
 
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    let aiReply = await callAIResp(userText);
 
-      const responseMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        text: randomResponse,
-        senderId: match.user.id,
-        // timestamp: new Date()
-      };
+    const responseMessage: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      text: aiReply,
+      senderId: match.user.id,
+      // timestamp: new Date()
+    };
 
-      onSendMessage(responseMessage);
-      setLocalMessages(prev => {
-        const updated = [...prev, responseMessage];
-        console.log('Received message:', responseMessage);
-        console.log('Updated messages:', updated);
 
-        notifyNewIncomingMessage(responseMessage);
+    onSendMessage(responseMessage);
+    setLocalMessages(prev => {
+      const updated = [...prev, responseMessage];
+      console.log('Received message:', responseMessage);
+      console.log('Updated messages:', updated);
 
-        return updated;
-      });
-    }, 1000 + Math.random() * 2000);
+      notifyNewIncomingMessage(responseMessage);
+
+      return updated;
+    })
+
+    // setTimeout(() => {
+    //   const responses = [
+    //     "That's really interesting!",
+    //     "I totally agree with you!",
+    //     "Tell me more about that!",
+    //     "Haha, that's funny!",
+    //     "What do you think about...?",
+    //     "I love that idea!",
+    //     "That sounds amazing!",
+    //     "I've never thought about it that way.",
+    //     "You seem really thoughtful!",
+    //     "Thanks for sharing that with me!"
+    //   ];
+
+    //   const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+
+    //   const responseMessage: ChatMessage = {
+    //     id: (Date.now() + 1).toString(),
+    //     text: randomResponse,
+    //     senderId: match.user.id,
+    //     // timestamp: new Date()
+    //   };
+
+    //   onSendMessage(responseMessage);
+    //   setLocalMessages(prev => {
+    //     const updated = [...prev, responseMessage];
+    //     console.log('Received message:', responseMessage);
+    //     console.log('Updated messages:', updated);
+
+    //     notifyNewIncomingMessage(responseMessage);
+
+    //     return updated;
+    //   });
+    // }, 1000 + Math.random() * 2000);
   };
 
 
@@ -194,12 +218,32 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
   }
 
 
+  const callAIResp = async (text: String) => {
+
+
+    console.log(text);
+    try {
+      const res = await fetch("http://localhost:3000/aireply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json" // ✅ This is required
+        },
+        body: JSON.stringify({ text: text }),
+      });
+
+      const response = await res.text();
+      console.log(response);
+
+      return response;
+      // console.log("Notified server of incoming message:", message.text);
+    } catch (error) {
+      console.error("Failed to notify server:", error);
+    }
+  }
+
+
   const notifyNewIncomingMessage = async (message: ChatMessage) => {
 
-
-    console.log("hi");
-
-    console.log(convoMsg)
 
     const dataToSend = [ { person_one : convoMsg[0].text }, { person_two : convoMsg[1].text } ]
 
@@ -367,6 +411,7 @@ const ChatRoom = ({ match, currentUser, messages, onSendMessage, onBack, onViewP
       {/* Message Suggestions */}
       {(dynamicSuggestions ?? suggestions).length > 0 && (
       <div className="flex flex-wrap gap-2 mt-2 px-2">
+        <p>RizzPT recommends:</p>
         {(dynamicSuggestions ?? suggestions).map((text, index) => (
           <Button
             key={index}
