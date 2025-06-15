@@ -12,37 +12,36 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onComplete, 300); // Wait for fade out animation
-    }, 3000);
+    }, 5000); // 5 seconds
 
     return () => clearTimeout(timer);
   }, [onComplete]);
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-yellow-100 to-yellow-200 flex flex-col items-center justify-center transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
-      {/* Logo Container */}
-      <div className="flex flex-col items-center space-y-8 mb-16">
-        {/* Animated Fire Heart Emoji */}
-        <div className="text-8xl animate-pulse">
-          <span className="inline-block">❤️</span>
-          <span className="inline-block animate-bounce">‍🔥</span>
+    <div className={`min-h-screen flex flex-col items-center justify-center transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: '#D95277' }}>
+      {/* Main Card */}
+      <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 flex flex-col items-center space-y-4 md:space-y-6 mx-8 max-w-xs md:max-w-sm w-full">
+        {/* Fire Heart Emoji */}
+        <div className="text-4xl md:text-6xl animate-pulse">
+          ❤️‍🔥
         </div>
         
         {/* Brand Name */}
         <div className="text-center">
-          <h1 className="text-5xl font-bold text-red-500 mb-4 animate-fade-in">
-            unfiltered
+          <h1 className="text-2xl md:text-4xl font-bold text-black mb-1 md:mb-2" style={{ fontFamily: 'serif' }}>
+            Unfiltered
           </h1>
           
           {/* Tagline */}
-          <p className="text-xl text-red-400 font-medium animate-fade-in delay-300">
-            It's Me, Not You
+          <p className="text-sm md:text-lg text-gray-600 font-medium">
+            For the emotionally exhausted
           </p>
         </div>
       </div>
       
       {/* Loading indicator */}
       <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2">
-        <div className="w-8 h-8 border-2 border-red-300 border-t-red-500 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
       </div>
     </div>
   );

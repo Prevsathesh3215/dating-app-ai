@@ -21,6 +21,26 @@ const BadgesScreen = ({ user, totalMatches, totalMessages, totalWords, messages,
   const [unlockedBadge, setUnlockedBadge] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Check for dry texter pattern (3 consecutive one-word messages in any conversation)
+  const checkDryTexterPattern = () => {
+    for (const matchId in messages) {
+      const matchMessages = messages[matchId] || [];
+      const userMessages = matchMessages.filter(msg => msg.senderId === user.id);
+      
+      for (let i = 0; i <= userMessages.length - 3; i++) {
+        const consecutiveMessages = userMessages.slice(i, i + 3);
+        const allOneWord = consecutiveMessages.every(msg => 
+          msg.text.trim().split(' ').length === 1
+        );
+        
+        if (allOneWord) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   // All available badges with unlock conditions
   const allBadges = [
     { 
@@ -55,6 +75,14 @@ const BadgesScreen = ({ user, totalMatches, totalMessages, totalWords, messages,
       icon: '🔥',
       requirement: 'Get 5+ matches',
       earned: totalMatches >= 5
+    },
+    { 
+      id: 'dry_texter', 
+      name: 'Dry Texter', 
+      description: 'Send 3 consecutive one-word replies in a single conversation', 
+      icon: '🏜️',
+      requirement: 'Send 3 one-word messages in a row',
+      earned: checkDryTexterPattern()
     },
     { 
       id: 'early_bird', 
@@ -109,10 +137,10 @@ const BadgesScreen = ({ user, totalMatches, totalMessages, totalWords, messages,
   // Check for newly unlocked badges
   useEffect(() => {
     const earnedBadges = allBadges.filter(badge => badge.earned);
-    const previouslyEarnedBadges = user.badges || [];
+    const previouslyEarnedBadgeIds = (user.badges || []).map(badge => badge.id);
     
     const newlyUnlockedBadge = earnedBadges.find(badge => 
-      !previouslyEarnedBadges.some(prevBadge => prevBadge.id === badge.id)
+      !previouslyEarnedBadgeIds.includes(badge.id)
     );
 
     if (newlyUnlockedBadge && onBadgeUnlocked) {
@@ -120,7 +148,7 @@ const BadgesScreen = ({ user, totalMatches, totalMessages, totalWords, messages,
       setShowModal(true);
       onBadgeUnlocked(newlyUnlockedBadge);
     }
-  }, [totalMatches, totalMessages, totalWords, messages, user.ratings]);
+  }, [totalMatches, totalMessages, totalWords, messages, user.ratings, user.badges]);
 
   const earnedBadges = allBadges.filter(badge => badge.earned);
   const lockedBadges = allBadges.filter(badge => !badge.earned);

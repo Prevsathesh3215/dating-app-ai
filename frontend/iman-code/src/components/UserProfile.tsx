@@ -3,31 +3,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { ArrowLeft, Star, MessageSquare, Heart, TrendingUp, MapPin, Briefcase, GraduationCap, Trash2, ChevronRight } from 'lucide-react';
 
 interface UserProfileProps {
   user: User;
   matches: Match[];
   messages: { [key: string]: ChatMessage[] };
+  unmatchedCount?: number;
   onBack: () => void;
   onDeleteAccount: () => void;
   onViewAllBadges: () => void;
 }
 
-const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewAllBadges }: UserProfileProps) => {
+const UserProfile = ({ user, matches, messages, unmatchedCount = 0, onBack, onDeleteAccount, onViewAllBadges }: UserProfileProps) => {
+  // Fix broken image URLs
+  const getValidPhotoUrl = (photo: string) => {
+    if (!photo || photo.includes('broken') || photo === '/placeholder.svg') {
+      return 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=400&h=600&fit=crop&crop=face';
+    }
+    return photo;
+  };
+
   // Calculate stats
   const totalMatches = matches.length;
-  const totalMessages = Object.values(messages).reduce((total, messageList) => total + messageList.length, 0);
+  const totalConversations = Object.keys(messages).length; // Changed from totalMessages
   const totalWords = Object.values(messages).reduce((total, messageList) => {
     return total + messageList.reduce((wordCount, message) => {
       return wordCount + message.text.split(' ').length;
@@ -42,6 +47,21 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
     }, 0);
     return wordCount >= 100;
   }).length;
+
+  // Generate membership date - use current year for new users (no matches/conversations)
+  const generateMembershipDate = () => {
+    // If user is completely new (no matches or conversations), use current year
+    if (totalMatches === 0 && totalConversations === 0) {
+      return new Date().getFullYear();
+    }
+    
+    // Otherwise, use random year between 2020-2024 for demo purposes
+    const years = [2020, 2021, 2022, 2023, 2024];
+    const randomYear = years[Math.floor(Math.random() * years.length)];
+    return randomYear;
+  };
+
+  const memberSince = generateMembershipDate();
 
   // Generate AI Rizz Review
   const generateRizzReview = () => {
@@ -88,6 +108,32 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
 
   const avgCommunication = getAverageRating(user.ratings.communication);
   const avgRespectfulness = getAverageRating(user.ratings.respectfulness);
+  const avgAuthenticity = getAverageRating(user.ratings.authenticity || []);
+
+  // Check if user has any actual reviews
+  const hasReviews = user.ratings.communication.length > 0 || 
+                    user.ratings.respectfulness.length > 0 || 
+                    (user.ratings.authenticity && user.ratings.authenticity.length > 0);
+
+  // Check for dry texter pattern (3 consecutive one-word messages in any conversation)
+  const checkDryTexterPattern = () => {
+    for (const matchId in messages) {
+      const matchMessages = messages[matchId] || [];
+      const userMessages = matchMessages.filter(msg => msg.senderId === user.id);
+      
+      for (let i = 0; i <= userMessages.length - 3; i++) {
+        const consecutiveMessages = userMessages.slice(i, i + 3);
+        const allOneWord = consecutiveMessages.every(msg => 
+          msg.text.trim().split(' ').length === 1
+        );
+        
+        if (allOneWord) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   // Available badges (extended for demo)
   const availableBadges = [
@@ -96,7 +142,7 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
       name: 'Icebreaker Pro', 
       description: 'Sent first message in 3+ chats', 
       icon: '🎯',
-      earned: totalMessages >= 3 && matches.some(match => {
+      earned: totalConversations >= 3 && matches.some(match => {
         const matchMessages = messages[match.id] || [];
         return matchMessages.length > 0 && matchMessages[0].senderId === user.id;
       })
@@ -121,6 +167,13 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
       description: 'Matched with 5+ people', 
       icon: '🔥',
       earned: totalMatches >= 5
+    },
+    { 
+      id: 'dry_texter', 
+      name: 'Dry Texter', 
+      description: 'Sent 3 consecutive one-word replies in a conversation', 
+      icon: '🏜️',
+      earned: checkDryTexterPattern()
     }
   ];
 
@@ -149,13 +202,13 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
       </div>
 
       <div className="px-4 -mt-12">
-        {/* Profile Card - Updated with new brand color */}
+        {/* Profile Card */}
         <Card className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
           <div className="relative">
             {/* Main Photo */}
             <div className="aspect-[3/4] bg-gray-200 rounded-t-2xl overflow-hidden">
               <img
-                src={user.photo}
+                src={getValidPhotoUrl(user.photo)}
                 alt={user.name}
                 className="w-full h-full object-cover"
               />
@@ -175,29 +228,39 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
 
           {/* Profile Details */}
           <CardContent className="p-6">
-            {/* Basic Info */}
+            {/* Basic Info - UPDATED STYLING */}
             <div className="space-y-4 mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
-                  <Heart className="w-4 h-4 text-brand" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Looking for</p>
-                  <p className="font-semibold text-gray-800">{user.relationshipGoal}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
+              {/* Gender */}
+              <div className="flex items-start space-x-3">
+                <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Star className="w-4 h-4 text-brand" />
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Gender</p>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500 mb-1">Gender</p>
                   <p className="font-semibold text-gray-800">{user.gender}</p>
                 </div>
               </div>
+              {/* Looking for - FIXED ALIGNMENT */}
+              <div className="flex items-start space-x-3">
+                <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Heart className="w-4 h-4 text-brand" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500 mb-1">Looking for</p>
+                  <p className="font-semibold text-gray-800 leading-relaxed">{user.relationshipGoal}</p>
+                </div>
+              </div>
+              {/* Life Phase */}
+              <div className="flex items-start space-x-3">
+                <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <GraduationCap className="w-4 h-4 text-brand" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500 mb-1">Life Phase</p>
+                  <p className="font-semibold text-gray-800">{user.lifePhase}</p>
+                </div>
+              </div>
             </div>
-
             {/* Bio */}
             {user.bio && (
               <div className="mb-6">
@@ -205,7 +268,6 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
                 <p className="text-gray-600 leading-relaxed">{user.bio}</p>
               </div>
             )}
-
             {/* Earned Badges */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
@@ -221,44 +283,126 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {availableBadges
-                  .filter(badge => badge.earned)
-                  .map((badge) => (
-                    <div
-                      key={badge.id}
-                      className="bg-pink-100 border border-pink-200 rounded-full px-3 py-1 flex items-center space-x-2"
-                    >
-                      <span className="text-sm">{badge.icon}</span>
-                      <span className="text-xs font-medium text-pink-800">{badge.name}</span>
-                    </div>
-                  ))}
+                {availableBadges.filter(badge => badge.earned).map(badge => (
+                  <div
+                    key={badge.id}
+                    className="bg-pink-100 border border-pink-200 rounded-full px-3 py-1 flex items-center space-x-2"
+                  >
+                    <span className="text-sm">{badge.icon}</span>
+                    <span className="text-xs font-medium text-pink-800">{badge.name}</span>
+                  </div>
+                ))}
                 {availableBadges.filter(badge => badge.earned).length === 0 && (
                   <p className="text-gray-500 text-sm">No badges earned yet. Keep using the app to unlock them!</p>
                 )}
               </div>
             </div>
+            {/* Reviews Section - Always show, with message if no reviews */}
+            <div className="mb-8">
+              <h3 className="font-semibold text-gray-800 mb-1">Reviews</h3>
+              {hasReviews ? (
+                <>
+                  <div className="text-gray-600 text-xs mb-3">
+                    Average rating based on {Math.max(user.ratings.communication.length, user.ratings.respectfulness.length, user.ratings.authenticity?.length || 0)} reviews
+                  </div>
+                  <div className="space-y-3">
+                    {user.ratings.communication.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-black font-medium">Communication</span>
+                          <span className="text-xs text-black font-medium">- {avgCommunication.toFixed(1)}/5</span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <svg key={i} width="12" height="12" viewBox="0 0 24 24">
+                              <polygon
+                                points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"
+                                fill={i < Math.round(avgCommunication) ? "#ec4899" : "none"}
+                                stroke="#ec4899"
+                                strokeWidth="2"
+                              />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {user.ratings.respectfulness.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-black font-medium">Respectfulness</span>
+                          <span className="text-xs text-black font-medium">- {avgRespectfulness.toFixed(1)}/5</span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <svg key={i} width="12" height="12" viewBox="0 0 24 24">
+                              <polygon
+                                points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"
+                                fill={i < Math.round(avgRespectfulness) ? "#ec4899" : "none"}
+                                stroke="#ec4899"
+                                strokeWidth="2"
+                              />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {user.ratings.authenticity && user.ratings.authenticity.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-black font-medium">Authenticity</span>
+                          <span className="text-xs text-black font-medium">- {avgAuthenticity.toFixed(1)}/5</span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <svg key={i} width="12" height="12" viewBox="0 0 24 24">
+                              <polygon
+                                points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"
+                                fill={i < Math.round(avgAuthenticity) ? "#ec4899" : "none"}
+                                stroke="#ec4899"
+                                strokeWidth="2"
+                              />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-gray-500 text-sm">
+                  You haven't received any reviews yet
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Stats Card */}
+        {/* Stats Card - Updated Layout */}
         <Card className="bg-white rounded-2xl shadow-lg mb-6">
           <CardContent className="p-6">
-            <h3 className="font-bold text-gray-800 mb-4 flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-brand" />
-              My Activity
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <h3 className="font-bold text-gray-800 text-lg flex items-center">
+                  Activity
+                  <TrendingUp className="w-5 h-5 ml-2 text-brand" />
+                </h3>
+              </div>
+              <div className="text-gray-600 text-sm">
+                Member since {memberSince}
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="text-2xl font-bold text-brand">{totalMatches}</div>
-                <div className="text-xs text-gray-500">Matches</div>
+                <div className="text-4xl font-bold text-brand mb-2">{totalMatches}</div>
+                <div className="text-sm text-gray-600 font-medium">Matches</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-brand">{totalMessages}</div>
-                <div className="text-xs text-gray-500">Messages</div>
+                <div className="text-4xl font-bold text-brand mb-2">{totalConversations}</div>
+                <div className="text-sm text-gray-600 font-medium">Conversations</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-brand">{totalWords}</div>
-                <div className="text-xs text-gray-500">Words</div>
+                <div className="text-4xl font-bold text-brand mb-2">{unmatchedCount}</div>
+                <div className="text-sm text-gray-600 font-medium">Unmatched</div>
               </div>
             </div>
           </CardContent>
@@ -291,131 +435,36 @@ const UserProfile = ({ user, matches, messages, onBack, onDeleteAccount, onViewA
           </CardContent>
         </Card>
 
-        {/* Reviews Card - Always show this section */}
-        <Card className="bg-white rounded-2xl shadow-lg mb-6">
-          <CardContent className="p-6">
-            <h3 className="font-bold text-gray-800 mb-4 flex items-center">
-              <Star className="w-5 h-5 mr-2 text-brand" />
-              Reviews
-            </h3>
-            {(user.ratings.communication.length > 0 || user.ratings.respectfulness.length > 0 || (user.ratings.authenticity && user.ratings.authenticity.length > 0)) ? (
+        {/* Delete Account Link */}
+        <div className="text-center pb-8">
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="text-gray-500 text-sm underline hover:text-gray-700 transition-colors">
+                Delete Account
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-semibold text-center mb-4">
+                  Delete Account
+                </DialogTitle>
+              </DialogHeader>
               <div className="space-y-4">
-                {user.ratings.communication.length > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700 font-medium">Communication</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < Math.floor(avgCommunication) 
-                                ? 'text-pink-400 fill-current' 
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600 font-medium">
-                        {avgCommunication.toFixed(1)} ({user.ratings.communication.length} reviews)
-                      </span>
-                    </div>
-                  </div>
-                )}
+                <p className="text-gray-600 text-center">
+                  This action cannot be undone. All your data, matches, and messages will be permanently deleted.
+                </p>
                 
-                {user.ratings.respectfulness.length > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700 font-medium">Respectfulness</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < Math.floor(avgRespectfulness) 
-                                ? 'text-pink-400 fill-current' 
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600 font-medium">
-                        {avgRespectfulness.toFixed(1)} ({user.ratings.respectfulness.length} reviews)
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {user.ratings.authenticity && user.ratings.authenticity.length > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700 font-medium">Authenticity</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < Math.floor(getAverageRating(user.ratings.authenticity || [])) 
-                                ? 'text-pink-400 fill-current' 
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600 font-medium">
-                        {getAverageRating(user.ratings.authenticity || []).toFixed(1)} ({user.ratings.authenticity.length} reviews)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm text-center">No reviews yet</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Delete Account Section */}
-        <Card className="bg-red-50 border-red-200 rounded-2xl shadow-lg mb-6">
-          <CardContent className="p-6">
-            <h3 className="font-bold text-red-800 mb-2">Delete Account</h3>
-            <p className="text-red-600 text-sm mb-4">
-              This action cannot be undone. All your data, matches, and messages will be permanently deleted.
-            </p>
-            
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
                 <Button 
-                  variant="destructive" 
-                  className="w-full bg-red-600 hover:bg-red-700"
+                  onClick={handleDeleteAccount}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete My Account
+                  Proceed to Delete
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your account
-                    and remove all your data including matches, messages, and profile information.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleDeleteAccount}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Yes, delete my account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </CardContent>
-        </Card>
-
-        <div className="pb-8"></div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </div>
   );

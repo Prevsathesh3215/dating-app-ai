@@ -5,22 +5,44 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft } from 'lucide-react';
 
 interface ProfileFormProps {
   onComplete: (user: User) => void;
+  onBack?: () => void;
 }
 
-const ProfileForm = ({ onComplete }: ProfileFormProps) => {
+const ProfileForm = ({ onComplete, onBack }: ProfileFormProps) => {
   const [formData, setFormData] = useState({
     name: '',
     age: '',
     gender: '',
-    relationshipGoal: '',
-    bio: ''
+    primaryIntention: '',
+    secondaryIntention: '',
+    bio: '',
+    lifePhase: ''
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const intentionOptions = [
+    'Friendship',
+    'Casual Dates',
+    'Intimacy Without Commitment',
+    'Long-Term Relationship'
+  ];
+
+  const lifePhaseOptions = [
+    "Single and independent",
+    "Career-focused",
+    "Exploring",
+    "Settling down",
+    "Starting over",
+    "Retirement transition",
+    "Studying"
+  ];
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -38,8 +60,12 @@ const ProfileForm = ({ onComplete }: ProfileFormProps) => {
       newErrors.gender = 'Please select your gender';
     }
 
-    if (!formData.relationshipGoal) {
-      newErrors.relationshipGoal = 'Please select your relationship goal';
+    if (!formData.primaryIntention) {
+      newErrors.primaryIntention = 'Please select your primary intention';
+    }
+
+    if (!formData.lifePhase) {
+      newErrors.lifePhase = 'Please select your current life phase';
     }
 
     if (formData.bio.length > 100) {
@@ -48,6 +74,15 @@ const ProfileForm = ({ onComplete }: ProfileFormProps) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const getRelationshipGoalText = () => {
+    if (formData.primaryIntention && formData.secondaryIntention) {
+      return `Primarily looking for ${formData.primaryIntention} but open to ${formData.secondaryIntention}`;
+    } else if (formData.primaryIntention) {
+      return `Looking for ${formData.primaryIntention}`;
+    }
+    return '';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,14 +97,15 @@ const ProfileForm = ({ onComplete }: ProfileFormProps) => {
       name: formData.name,
       age: parseInt(formData.age),
       gender: formData.gender as User['gender'],
-      relationshipGoal: formData.relationshipGoal as User['relationshipGoal'],
+      relationshipGoal: getRelationshipGoalText() as User['relationshipGoal'],
       bio: formData.bio,
       photo: '/placeholder.svg', // Default placeholder
       badges: [],
       ratings: {
         communication: [],
         respectfulness: []
-      }
+      },
+      lifePhase: formData.lifePhase
     };
 
     onComplete(user);
@@ -78,10 +114,20 @@ const ProfileForm = ({ onComplete }: ProfileFormProps) => {
   return (
     <div className="min-h-screen bg-brand flex flex-col">
       {/* Header */}
-      <div className="px-6 py-8 text-center">
-        <h1 className="text-4xl font-bold text-white mb-2">❤️‍🔥</h1>
-        <h2 className="text-2xl font-bold text-white mb-2">Welcome to Unfiltered</h2>
-        <p className="text-white/90">It's Me, Not You</p>
+      <div className="px-6 py-8 text-center relative">
+        {/* Back button */}
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="absolute left-4 top-8 text-white hover:bg-white/10 p-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+        )}
+        
+        <h2 className="text-2xl font-bold text-white">Tell Us About Yourself</h2>
       </div>
 
       {/* Form Card */}
@@ -133,21 +179,94 @@ const ProfileForm = ({ onComplete }: ProfileFormProps) => {
             {errors.gender && <p className="text-red-500 text-sm mt-1">{errors.gender}</p>}
           </div>
 
-          {/* Relationship Goal */}
+          {/* Relationship Intentions */}
           <div>
-            <Label className="text-gray-800 font-semibold mb-2 block">What are you looking for? *</Label>
-            <Select onValueChange={(value) => setFormData(prev => ({ ...prev, relationshipGoal: value }))}>
-              <SelectTrigger className={`border-2 rounded-2xl py-3 px-4 text-lg h-auto ${errors.relationshipGoal ? 'border-red-400' : 'border-gray-200'}`}>
-                <SelectValue placeholder="Choose your intention" />
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl">
-                <SelectItem value="Friendship">Friendship</SelectItem>
-                <SelectItem value="Casual Dates">Casual Dates</SelectItem>
-                <SelectItem value="Intimacy Without Commitment">Intimacy Without Commitment</SelectItem>
-                <SelectItem value="Long-Term Relationship">Long-Term Relationship</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.relationshipGoal && <p className="text-red-500 text-sm mt-1">{errors.relationshipGoal}</p>}
+            <Label className="text-gray-800 font-semibold mb-3 block">What are you looking for? *</Label>
+            
+            {/* Primary Intention */}
+            <div className="mb-4">
+              <Label className="text-gray-600 font-medium mb-2 block text-sm">Primary intention</Label>
+              <ToggleGroup 
+                type="single" 
+                value={formData.primaryIntention}
+                onValueChange={(value) => {
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    primaryIntention: value || '',
+                    // Clear secondary if it's the same as primary
+                    secondaryIntention: prev.secondaryIntention === value ? '' : prev.secondaryIntention
+                  }))
+                }}
+                className="flex flex-wrap gap-2 justify-start"
+              >
+                {intentionOptions.map((option) => (
+                  <ToggleGroupItem 
+                    key={option} 
+                    value={option}
+                    className="border-2 border-gray-200 rounded-2xl px-4 py-2 text-sm font-medium data-[state=on]:bg-brand data-[state=on]:text-white data-[state=on]:border-brand hover:bg-brand/5"
+                  >
+                    {option}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
+            {/* Secondary Intention */}
+            {formData.primaryIntention && (
+              <div className="mb-4">
+                <Label className="text-gray-600 font-medium mb-2 block text-sm">
+                  Secondary intention (optional)
+                </Label>
+                <ToggleGroup 
+                  type="single" 
+                  value={formData.secondaryIntention}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, secondaryIntention: value || '' }))}
+                  className="flex flex-wrap gap-2 justify-start"
+                >
+                  {intentionOptions
+                    .filter(option => option !== formData.primaryIntention)
+                    .map((option) => (
+                      <ToggleGroupItem 
+                        key={option} 
+                        value={option}
+                        className="border-2 border-gray-200 rounded-2xl px-4 py-2 text-sm font-medium data-[state=on]:bg-brand data-[state=on]:text-white data-[state=on]:border-brand hover:bg-brand/5"
+                      >
+                        {option}
+                      </ToggleGroupItem>
+                    ))}
+                </ToggleGroup>
+              </div>
+            )}
+
+            {errors.primaryIntention && <p className="text-red-500 text-sm mt-1">{errors.primaryIntention}</p>}
+          </div>
+
+          {/* New Life Phase Field */}
+          <div>
+            <Label className="text-gray-800 font-semibold mb-3 block">
+              What phase best reflects your current stage in life? *
+            </Label>
+            <ToggleGroup
+              type="single"
+              value={formData.lifePhase}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, lifePhase: value || '' }))
+              }
+              className="flex flex-wrap gap-2 justify-start"
+            >
+              {lifePhaseOptions.map((option) => (
+                <ToggleGroupItem
+                  key={option}
+                  value={option}
+                  className="border-2 border-gray-200 rounded-2xl px-4 py-2 text-sm font-medium data-[state=on]:bg-brand data-[state=on]:text-white data-[state=on]:border-brand hover:bg-brand/5"
+                >
+                  {option}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            {errors.lifePhase && (
+              <p className="text-red-500 text-sm mt-1">{errors.lifePhase}</p>
+            )}
           </div>
 
           {/* Bio */}

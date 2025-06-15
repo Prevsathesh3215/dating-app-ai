@@ -14,7 +14,12 @@ interface PhotoUploadProps {
 }
 
 const PhotoUpload = ({ user, onComplete, onSkip }: PhotoUploadProps) => {
-  const [photo, setPhoto] = useState(user.photo);
+  // Fix Sarah's broken image by providing a working placeholder
+  const defaultPhoto = user.photo && user.photo.includes('broken') 
+    ? 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=400&h=600&fit=crop&crop=face'
+    : user.photo;
+  
+  const [photo, setPhoto] = useState(defaultPhoto);
   const [isUploading, setIsUploading] = useState(false);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

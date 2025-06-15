@@ -1,10 +1,9 @@
-
 export interface User {
   id: string;
   name: string;
   age: number;
   gender: 'Male' | 'Female' | 'Non-Binary' | 'Prefer Not to Say';
-  relationshipGoal: 'Friendship' | 'Casual Dates' | 'Intimacy Without Commitment' | 'Long-Term Relationship';
+  relationshipGoal: string; // Changed to string to allow custom formatted text
   bio: string;
   photo: string;
   badges: Badge[];
@@ -15,6 +14,7 @@ export interface User {
     respectfulness: number[];
     authenticity?: number[];
   };
+  lifePhase: string; // <-- Added property for user's life phase
 }
 
 export interface Badge {
@@ -36,7 +36,7 @@ export interface ChatMessage {
   id: string;
   text: string;
   senderId: string;
-  // timestamp: Date;
+  timestamp: Date;
 }
 
 export interface PotentialMatch extends User {

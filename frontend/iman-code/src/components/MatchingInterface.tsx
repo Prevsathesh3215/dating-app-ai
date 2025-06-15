@@ -25,7 +25,8 @@ const mockUsers: PotentialMatch[] = [
     badges: [
       { id: 'icebreaker', name: 'Icebreaker Pro', description: 'Sent first message in 3+ chats', icon: '🎯', earned: true }
     ],
-    ratings: { communication: [4, 5, 4], respectfulness: [5, 5, 4] }
+    ratings: { communication: [4, 5, 4], respectfulness: [5, 5, 4] },
+    lifePhase: 'Exploring'
   },
   {
     id: '3',
@@ -38,7 +39,8 @@ const mockUsers: PotentialMatch[] = [
     badges: [
       { id: 'respectful', name: 'Respectful Responder', description: 'Received 4+/5 in Respectfulness from 2+ reviews', icon: '🌟', earned: true }
     ],
-    ratings: { communication: [4, 4, 5], respectfulness: [5, 5, 5] }
+    ratings: { communication: [4, 4, 5], respectfulness: [5, 5, 5] },
+    lifePhase: 'Single and independent'
   },
   {
     id: '4',
@@ -49,7 +51,8 @@ const mockUsers: PotentialMatch[] = [
     bio: 'Artist, musician, and nature lover. Always up for deep conversations and creative collaborations! 🎨🎵',
     photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=face',
     badges: [],
-    ratings: { communication: [3, 4, 4], respectfulness: [4, 4, 5] }
+    ratings: { communication: [3, 4, 4], respectfulness: [4, 4, 5] },
+    lifePhase: 'Studying'
   },
   {
     id: '5',
@@ -63,7 +66,8 @@ const mockUsers: PotentialMatch[] = [
       { id: 'icebreaker', name: 'Icebreaker Pro', description: 'Sent first message in 3+ chats', icon: '🎯', earned: true },
       { id: 'respectful', name: 'Respectful Responder', description: 'Received 4+/5 in Respectfulness from 2+ reviews', icon: '🌟', earned: true }
     ],
-    ratings: { communication: [5, 4, 5], respectfulness: [5, 5, 4] }
+    ratings: { communication: [5, 4, 5], respectfulness: [5, 5, 4] },
+    lifePhase: 'Career-focused'
   },
   {
     id: '6',
@@ -76,7 +80,8 @@ const mockUsers: PotentialMatch[] = [
     badges: [
       { id: 'conversationalist', name: 'Great Conversationalist', description: 'Exchanged 1000+ words with someone', icon: '💬', earned: true }
     ],
-    ratings: { communication: [5, 5, 4], respectfulness: [4, 5, 5] }
+    ratings: { communication: [5, 5, 4], respectfulness: [4, 5, 5] },
+    lifePhase: 'Exploring'
   },
   {
     id: '7',
@@ -87,7 +92,8 @@ const mockUsers: PotentialMatch[] = [
     bio: 'Graduate student, bookworm, and amateur photographer. Always down for coffee and deep conversations! 📸☕',
     photo: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=400&h=600&fit=crop&crop=face',
     badges: [],
-    ratings: { communication: [4, 3, 4], respectfulness: [5, 4, 5] }
+    ratings: { communication: [4, 3, 4], respectfulness: [5, 4, 5] },
+    lifePhase: 'Settling down'
   },
   {
     id: '8',
@@ -100,7 +106,8 @@ const mockUsers: PotentialMatch[] = [
     badges: [
       { id: 'popular', name: 'Popular Match', description: 'Matched with 5+ people', icon: '🔥', earned: true }
     ],
-    ratings: { communication: [4, 5, 5], respectfulness: [5, 5, 4] }
+    ratings: { communication: [4, 5, 5], respectfulness: [5, 5, 4] },
+    lifePhase: 'Starting over'
   },
   {
     id: '9',
@@ -114,7 +121,8 @@ const mockUsers: PotentialMatch[] = [
       { id: 'icebreaker', name: 'Icebreaker Pro', description: 'Sent first message in 3+ chats', icon: '🎯', earned: true },
       { id: 'conversationalist', name: 'Great Conversationalist', description: 'Exchanged 1000+ words with someone', icon: '💬', earned: true }
     ],
-    ratings: { communication: [5, 4, 5], respectfulness: [4, 5, 4] }
+    ratings: { communication: [5, 4, 5], respectfulness: [4, 5, 4] },
+    lifePhase: 'Career-focused'
   },
   {
     id: '10',
@@ -125,7 +133,8 @@ const mockUsers: PotentialMatch[] = [
     bio: 'Film student, indie music lover, and part-time barista. Always looking for creative collaborations and genuine friendships! 🎬🎵',
     photo: 'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=400&h=600&fit=crop&crop=face',
     badges: [],
-    ratings: { communication: [3, 4, 3], respectfulness: [5, 5, 5] }
+    ratings: { communication: [3, 4, 3], respectfulness: [5, 5, 5] },
+    lifePhase: 'Studying'
   },
   {
     id: '11',
@@ -139,7 +148,8 @@ const mockUsers: PotentialMatch[] = [
       { id: 'respectful', name: 'Respectful Responder', description: 'Received 4+/5 in Respectfulness from 2+ reviews', icon: '🌟', earned: true },
       { id: 'popular', name: 'Popular Match', description: 'Matched with 5+ people', icon: '🔥', earned: true }
     ],
-    ratings: { communication: [5, 5, 4], respectfulness: [5, 5, 5] }
+    ratings: { communication: [5, 5, 4], respectfulness: [5, 5, 5] },
+    lifePhase: 'Retirement transition'
   },
   {
     id: '12',
@@ -152,7 +162,8 @@ const mockUsers: PotentialMatch[] = [
     badges: [
       { id: 'icebreaker', name: 'Icebreaker Pro', description: 'Sent first message in 3+ chats', icon: '🎯', earned: true }
     ],
-    ratings: { communication: [4, 4, 5], respectfulness: [4, 4, 4] }
+    ratings: { communication: [4, 4, 5], respectfulness: [4, 4, 4] },
+    lifePhase: 'Exploring'
   }
 ];
 

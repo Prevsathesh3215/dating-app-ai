@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import SplashScreen from '../components/SplashScreen';
 import ProfileForm from '../components/ProfileForm';
@@ -17,6 +18,15 @@ const Index = () => {
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [messages, setMessages] = useState<{ [key: string]: ChatMessage[] }>({});
+  const [unmatchedCount, setUnmatchedCount] = useState(0);
+
+  // Fix broken image URLs
+  const getValidPhotoUrl = (photo: string) => {
+    if (!photo || photo.includes('broken') || photo === '/placeholder.svg') {
+      return 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=400&h=600&fit=crop&crop=face';
+    }
+    return photo;
+  };
 
   // Safe localStorage operations with error handling
   const safeSetLocalStorage = (key: string, value: any) => {
@@ -57,8 +67,8 @@ const Index = () => {
   useEffect(() => {
     const savedUser = safeGetLocalStorage('currentUser');
     if (savedUser) {
-      // Restore the photo placeholder since we don't store it
-      const userWithPhoto = { ...savedUser, photo: '/placeholder.svg' };
+      // Restore the photo placeholder since we don't store it, but fix broken URLs
+      const userWithPhoto = { ...savedUser, photo: getValidPhotoUrl(savedUser.photo || '/placeholder.svg') };
       setCurrentUser(userWithPhoto);
       // Skip splash screen if user already exists
       setCurrentView('matching');
@@ -66,7 +76,15 @@ const Index = () => {
     
     const savedMatches = safeGetLocalStorage('matches');
     if (savedMatches) {
-      setMatches(savedMatches);
+      // Fix broken photo URLs in matches as well
+      const fixedMatches = savedMatches.map((match: Match) => ({
+        ...match,
+        user: {
+          ...match.user,
+          photo: getValidPhotoUrl(match.user.photo)
+        }
+      }));
+      setMatches(fixedMatches);
     }
 
     const savedMessages = safeGetLocalStorage('messages');
@@ -94,6 +112,10 @@ const Index = () => {
     setCurrentView('profile');
   };
 
+  const handleBackToSplash = () => {
+    setCurrentView('splash');
+  };
+
   const handleProfileComplete = (user: User) => {
     setCurrentUser(user);
     setCurrentView('photo-upload');
@@ -109,7 +131,15 @@ const Index = () => {
   };
 
   const handleMatch = (match: Match) => {
-    setMatches(prev => [...prev, match]);
+    // Fix broken photo URLs when adding new matches
+    const fixedMatch = {
+      ...match,
+      user: {
+        ...match.user,
+        photo: getValidPhotoUrl(match.user.photo)
+      }
+    };
+    setMatches(prev => [...prev, fixedMatch]);
   };
 
   const handleStartChat = (match: Match) => {
@@ -186,6 +216,34 @@ const Index = () => {
     setViewingUser(null);
     setMatches([]);
     setMessages({});
+    setUnmatchedCount(0);
+  };
+
+  const handleUnmatch = (userId: string) => {
+    // Remove the match from matches array
+    setMatches(prev => prev.filter(match => match.user.id !== userId));
+    
+    // Remove messages for this match
+    setMessages(prev => {
+      const matchId = Object.keys(prev).find(id => {
+        const match = matches.find(m => m.id === id);
+        return match && match.user.id === userId;
+      });
+      
+      if (matchId) {
+        const newMessages = { ...prev };
+        delete newMessages[matchId];
+        return newMessages;
+      }
+      return prev;
+    });
+    
+    // Increment unmatched count
+    setUnmatchedCount(prev => prev + 1);
+    
+    // Go back to previous view
+    setViewingUser(null);
+    setCurrentView('chat-room');
   };
 
   // Show splash screen first
@@ -196,7 +254,10 @@ const Index = () => {
   if (!currentUser && currentView === 'profile') {
     return (
       <div className="min-h-screen bg-white">
-        <ProfileForm onComplete={handleProfileComplete} />
+        <ProfileForm 
+          onComplete={handleProfileComplete} 
+          onBack={handleBackToSplash}
+        />
       </div>
     );
   }
@@ -294,6 +355,7 @@ const Index = () => {
             user={currentUser}
             matches={matches}
             messages={messages}
+            unmatchedCount={unmatchedCount}
             onBack={() => setCurrentView('matching')}
             onDeleteAccount={handleDeleteAccount}
             onViewAllBadges={handleViewAllBadges}
@@ -320,6 +382,7 @@ const Index = () => {
           <MatchProfile
             user={viewingUser}
             onBack={handleBackFromMatchProfile}
+            onUnmatch={handleUnmatch}
           />
         )}
       </div>
